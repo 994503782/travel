@@ -27,6 +27,12 @@ public:
 	{
 		date = hour = minute = 0;
 	}
+	Time(int d, int h, int m)
+	{
+		date = d;
+		hour = h;
+		minute = m;
+	}
 	Time(Time& t)
 	{
 		date = t.date;
@@ -73,7 +79,22 @@ public:
 		temp.hour %= HOUR;
 		return temp;
 	}
+	
 };
+const bool operator<(const Time& t1, const Time& t2)
+{
+	if (t1.date < t2.date)return true;
+	else if (t1.date == t2.date&&t1.hour < t2.hour)return true;
+	else if (t1.date == t2.date&&t1.hour == t2.hour&&t1.minute < t2.minute)return true;
+	return false;
+}
+const bool operator<=(const Time& t1, const Time& t2)
+{
+	if (t1.date < t2.date)return true;
+	else if (t1.date == t2.date&&t1.hour < t2.hour)return true;
+	else if (t1.date == t2.date&&t1.hour == t2.hour&&t1.minute <= t2.minute)return true;
+	return false;
+}
 class Path//路径Unit
 {
 public:
