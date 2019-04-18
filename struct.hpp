@@ -105,6 +105,7 @@ public:
 	int time_used;			//所用时间/分钟
 	int cost;				//费用
 	Traffic traffic;		//交通方式
+	string serial_number;	//列车班次、航班号
 	Path& operator=(const Path& p)
 	{
 		this->from = p.from;
@@ -154,6 +155,13 @@ public:
 	int path_length;
 	Time arrivel_time;
 	int distance;
+	Road()
+	{
+		path_length = 0;
+		Time T(TIME_MAX, TIME_MAX, TIME_MAX);
+		arrivel_time = T;
+		distance = COST_MAX;
+	}
 	Road& operator=(const Road& r)
 	{
 		path_length = r.path_length;

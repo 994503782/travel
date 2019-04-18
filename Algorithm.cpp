@@ -13,27 +13,25 @@
 4.到达时间
 5.费用
 *****************************************************/
-void algorithm(Schedule** shift, int from, int to, Strategy strategy, vector<Path> &path, bool flag, Time begin)//得到的路径会连接到path的尾部
+void algorithm(Schedule** shift, int from, int to, Strategy strategy, vector<Path> &path, bool flag, Time begin, Time limit)//得到的路径会连接到path的尾部
 {
-	void(*dijkstra)(Schedule** shift, int from, int to, Time begin, vector<Path> &path);
+	//int(*GetPath)(Schedule** shift, int from, int to, Time begin, vector<Path> &path);
 	switch (strategy)
 	{
 	case cost_first:
-		dijkstra = dijkstra_cost_first;
+		flag = (bool)dijkstra_cost_first(shift, from, to, begin, path);
 		break;
 	case time_first:
-		dijkstra = dijkstra_time_first;
+		flag = (bool)dijkstra_time_first(shift, from, to, begin, path);
 		break;
 	case time_limit:
-		dijkstra = dijkstra_time_limit;
+		flag = (bool)DFS_time_limit(shift, from, to, begin, limit, path);
 		break;
 	default:break;
 	}
-	dijkstra(shift, from, to, begin, path);
-	flag = (bool)path.size();
 }
 
-void dijkstra_cost_first(Schedule** shift, int from, int to, Time begin, vector<Path> &path)
+int dijkstra_cost_first(Schedule** shift, int from, int to, Time begin, vector<Path> &path)
 {
 	Road road[CITY_MAX];//用于存储源点到其余各点的路径
 	vector<int> distance(CITY_MAX, COST_MAX);//存有距离的向量,此处距离为旅行费用，初始为最大值COST_MAX
@@ -101,8 +99,9 @@ void dijkstra_cost_first(Schedule** shift, int from, int to, Time begin, vector<
 	{
 		path.push_back(road[to].path[i]);//将所得的解连接在path的尾部
 	}
+	return road[to].path_length;
 }
-void dijkstra_time_first(Schedule** shift, int from, int to, Time begin, vector<Path> &path)
+int dijkstra_time_first(Schedule** shift, int from, int to, Time begin, vector<Path> &path)
 {
 	Road road[CITY_MAX];//用于存储源点到其余各点的路径
 	Time T(TIME_MAX, TIME_MAX, TIME_MAX);//时间的上界
@@ -171,8 +170,46 @@ void dijkstra_time_first(Schedule** shift, int from, int to, Time begin, vector<
 	{
 		path.push_back(road[to].path[i]);//将所得的解连接在path的尾部
 	}
+	return road[to].path_length;
 }
-void dijkstra_time_limit(Schedule** shift, int from, int to, Time begin, vector<Path> &path)
+int DFS_time_limit(Schedule** shift, int from, int to, Time begin, Time limit, vector<Path> &path)//限定时间内花费最少策略，采用DFS搜索
 {
-
+	Road road;//用于存储源点到目的地的路径
+	Road road_best;//用于存储最佳的路径
+	int arrival[CITY_MAX] = { 0 };//用于标志城市是否已经到达过
+	arrival[from] = 1;//起始城市置为已到达
+	DFS_find_road(shift, arrival, to, begin, limit, road, road_best, from);
+	for (int i = 0; i < road_best.path_length; i++)
+	{
+		path.push_back(road_best.path[i]);//将所得的解连接在path的尾部
+	}
+	return road_best.path_length;
+}
+void DFS_find_road(Schedule** shift, int arrival[], int to, Time& begin, Time& limit, Road &road, Road &road_best, int now)//now代表现在所在城市
+{
+	if (to == now)//找到一条路径时
+	{
+		if (road.arrivel_time < limit && road.distance < road_best.distance)//若满足给定的条件
+		{
+			road_best = road;
+		}
+		return;
+	}
+	for (int i = 0; i < CITY_MAX; i++)//检测从now到i城市的所有路径
+	{
+		if (arrival[i])continue;//若该城市已经过一次，则跳过
+		for (int j = 0; j < shift[now][i].path_number; j++)
+		{
+			road.path[road.path_length] = shift[now][i].path[j];//路径加入
+			road.path[road.path_length].begin_time.date = road.arrivel_time.date;//统一日期
+			if (road.path[road.path_length].begin_time < road.arrivel_time)//若是当天无法出发
+			{
+				road.path[road.path_length].begin_time.date++;
+			}
+			road.arrivel_time = road.arrivel_time + road.path[road.path_length];//更新到达时间
+			road.distance += road.path[road.path_length].cost;
+			road.path_length++;
+			DFS_find_road(shift, arrival, to, begin, limit, road, road_best, i);//road更新完毕，进入下一层递归
+		}
+	}
 }
