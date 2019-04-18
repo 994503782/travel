@@ -1,11 +1,12 @@
 ﻿#ifndef HPP
+
 #define HPP
 #include<iostream>
 #include<cstdlib>
 #include<vector>
 #include<string>
 using namespace std;
-#endif
+
 
 typedef enum { train, aircraft, car }Traffic;				//动车/飞机/汽车
 typedef enum { cost_first, time_first, time_limit }Strategy;//花费最少/时间最少/规定时间内费用最少
@@ -33,7 +34,7 @@ public:
 		hour = h;
 		minute = m;
 	}
-	Time(Time& t)
+	Time(const Time& t)
 	{
 		date = t.date;
 		hour = t.hour;
@@ -106,6 +107,18 @@ public:
 	int cost;				//费用
 	Traffic traffic;		//交通方式
 	string serial_number;	//列车班次、航班号
+	Path() {};
+	Path(const Path& p)
+	{
+		from = p.from;
+		to = p.to;
+		begin_time = p.begin_time;
+		end_time = p.end_time;
+		time_used = p.time_used;
+		cost = p.cost;
+		traffic = p.traffic;
+		serial_number = p.serial_number;
+	}
 	Path& operator=(const Path& p)
 	{
 		this->from = p.from;
@@ -114,6 +127,7 @@ public:
 		this->time_used = p.time_used;
 		this->cost = p.cost;
 		this->traffic = p.traffic;
+		this->serial_number = p.serial_number;
 		return *this;
 	}
 };
@@ -161,7 +175,7 @@ public:
 		Time T(TIME_MAX, TIME_MAX, TIME_MAX);
 		arrivel_time = T;
 		distance = COST_MAX;
-	}
+	};
 	Road& operator=(const Road& r)
 	{
 		path_length = r.path_length;
@@ -174,3 +188,5 @@ public:
 		return *this;
 	}
 };
+
+#endif

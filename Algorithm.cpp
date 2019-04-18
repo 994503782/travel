@@ -13,6 +13,9 @@
 4.到达时间
 5.费用
 *****************************************************/
+int dijkstra_cost_first(Schedule** shift, int from, int to, Time begin, vector<Path> &path);
+int dijkstra_time_first(Schedule** shift, int from, int to, Time begin, vector<Path> &path);
+int DFS_time_limit(Schedule** shift, int from, int to, Time begin, Time limit, vector<Path> &path);
 void algorithm(Schedule** shift, int from, int to, Strategy strategy, vector<Path> &path, bool flag, Time begin, Time limit)//得到的路径会连接到path的尾部
 {
 	//int(*GetPath)(Schedule** shift, int from, int to, Time begin, vector<Path> &path);
@@ -30,6 +33,8 @@ void algorithm(Schedule** shift, int from, int to, Strategy strategy, vector<Pat
 	default:break;
 	}
 }
+
+/*******************************************************************************************************************/
 
 int dijkstra_cost_first(Schedule** shift, int from, int to, Time begin, vector<Path> &path)
 {
@@ -101,6 +106,9 @@ int dijkstra_cost_first(Schedule** shift, int from, int to, Time begin, vector<P
 	}
 	return road[to].path_length;
 }
+
+/*******************************************************************************************************************/
+
 int dijkstra_time_first(Schedule** shift, int from, int to, Time begin, vector<Path> &path)
 {
 	Road road[CITY_MAX];//用于存储源点到其余各点的路径
@@ -172,6 +180,46 @@ int dijkstra_time_first(Schedule** shift, int from, int to, Time begin, vector<P
 	}
 	return road[to].path_length;
 }
+
+/*******************************************************************************************************************/
+
+void DFS_find_road(Schedule** shift, int arrival[], int to, Time& begin, Time& limit, Road &road, Road &road_best, int now)//now代表现在所在城市
+{
+	if (to == now)//找到一条路径时
+	{
+		if (road.arrivel_time < limit && road.distance < road_best.distance)//若满足给定的条件
+		{
+			road_best = road;
+		}
+		return;
+	}
+	if (limit <= road.arrivel_time)//当时间已经超时，就进行剪枝
+	{
+		return;
+	}
+	Road road_temp;
+	for (int i = 0; i < CITY_MAX; i++)//检测从now到i城市的所有路径
+	{
+		if (arrival[i])continue;//若该城市已经过一次，则跳过
+		for (int j = 0; j < shift[now][i].path_number; j++)
+		{
+			road_temp = road;//先保存当前的路径
+
+			road.path[road.path_length] = shift[now][i].path[j];//路径加入
+			road.path[road.path_length].begin_time.date = road.arrivel_time.date;//统一日期
+			if (road.path[road.path_length].begin_time < road.arrivel_time)//若是当天无法出发
+			{
+				road.path[road.path_length].begin_time.date++;
+			}
+			road.arrivel_time = road.arrivel_time + road.path[road.path_length];//更新到达时间
+			road.distance += road.path[road.path_length].cost;
+			road.path_length++;
+			DFS_find_road(shift, arrival, to, begin, limit, road, road_best, i);//road更新完毕，进入下一层递归
+
+			road = road_temp;//递归回溯后要将状态还原
+		}
+	}
+}
 int DFS_time_limit(Schedule** shift, int from, int to, Time begin, Time limit, vector<Path> &path)//限定时间内花费最少策略，采用DFS搜索
 {
 	Road road;//用于存储源点到目的地的路径
@@ -185,31 +233,9 @@ int DFS_time_limit(Schedule** shift, int from, int to, Time begin, Time limit, v
 	}
 	return road_best.path_length;
 }
-void DFS_find_road(Schedule** shift, int arrival[], int to, Time& begin, Time& limit, Road &road, Road &road_best, int now)//now代表现在所在城市
+int main()
 {
-	if (to == now)//找到一条路径时
-	{
-		if (road.arrivel_time < limit && road.distance < road_best.distance)//若满足给定的条件
-		{
-			road_best = road;
-		}
-		return;
-	}
-	for (int i = 0; i < CITY_MAX; i++)//检测从now到i城市的所有路径
-	{
-		if (arrival[i])continue;//若该城市已经过一次，则跳过
-		for (int j = 0; j < shift[now][i].path_number; j++)
-		{
-			road.path[road.path_length] = shift[now][i].path[j];//路径加入
-			road.path[road.path_length].begin_time.date = road.arrivel_time.date;//统一日期
-			if (road.path[road.path_length].begin_time < road.arrivel_time)//若是当天无法出发
-			{
-				road.path[road.path_length].begin_time.date++;
-			}
-			road.arrivel_time = road.arrivel_time + road.path[road.path_length];//更新到达时间
-			road.distance += road.path[road.path_length].cost;
-			road.path_length++;
-			DFS_find_road(shift, arrival, to, begin, limit, road, road_best, i);//road更新完毕，进入下一层递归
-		}
-	}
+	cout << "Hello world!" << endl;
+	system("pause");
+	return 0;
 }
