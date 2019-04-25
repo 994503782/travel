@@ -35,12 +35,12 @@ void PutSchedule()
 		{
 			string from;				//起始城市
 			string to;					//到达城市
-			int begin_time;		//开始时间
-			int end_time;			//到达时间
+			Time begin_time;
+			Time end_time;
 			int time_used;			//所用时间/分钟
 			int cost;				//费用
 			string traffic;
-			in >> from >> to >> traffic >> begin_time >> end_time >> cost >> time_used;
+			in >> from >> to >> traffic >> begin_time.hour >> end_time.hour >> cost >> time_used;
 			//cout << from << ' ' << to << ' ' << traffic << ' ' << begin_time << ' ' << end_time << ' ' << cost << ' ' << time_used << endl;
 			if (from == "北京") i = 0;
 			else if (from == "上海") i = 1;
@@ -62,11 +62,11 @@ void PutSchedule()
 			else if (to == "武汉") j = 7;
 			else if (to == "南京") j = 8;
 			else if (to == "哈尔滨") j = 9;
-			shift[i][j].path[shift[i][j].path_number].from = from;
-			shift[i][j].path[shift[i][j].path_number].to = to;
+			shift[i][j].path[shift[i][j].path_number].from = i;
+			shift[i][j].path[shift[i][j].path_number].to = j;
 			shift[i][j].path[shift[i][j].path_number].traffic = traffic;
-			shift[i][j].path[shift[i][j].path_number].begin_time = begin_time;
-			shift[i][j].path[shift[i][j].path_number].end_time = end_time;
+			shift[i][j].path[shift[i][j].path_number].begin_time = begin_time.hour;
+			shift[i][j].path[shift[i][j].path_number].end_time = end_time.hour;
 			shift[i][j].path[shift[i][j].path_number].cost = cost;
 			shift[i][j].path[shift[i][j].path_number].time_used = time_used;
 			shift[i][j].path_number++;
