@@ -1,10 +1,9 @@
-﻿#ifndef HPP
-
-#define HPP
+﻿
 #include<iostream>
 #include<cstdlib>
 #include<vector>
 #include<string>
+#include<fstream>
 using namespace std;
 
 
@@ -12,7 +11,7 @@ typedef enum { train, aircraft, car }Traffic;				//动车/飞机/汽车
 typedef enum { cost_first, time_first, time_limit }Strategy;//花费最少/时间最少/规定时间内费用最少
 const int COST_MAX = INT32_MAX;					//COST上界
 const int TIME_MAX = INT32_MAX;					//TIME上界
-const int CITY_MAX = 20;						//最大城市个数
+const int CITY_MAX = 10;						//最大城市个数
 const int PATH_MAX = 100;						//路径最大长度
 const int HOUR = 24;
 const int MINUTE = 60;
@@ -40,7 +39,7 @@ public:
 		hour = t.hour;
 		minute = t.minute;
 	}
-	Time& operator=(const Time& t)
+	const Time& operator=(const Time& t)
 	{
 		date = t.date;
 		hour = t.hour;
@@ -58,13 +57,14 @@ public:
 		temp.hour %= HOUR;
 		return temp;
 	}
+
 	const Time operator+(int time_used)
 	{
 		Time temp(*this);
 		temp.minute += time_used;
 		temp.hour += temp.minute / MINUTE;
 		temp.minute %= MINUTE;
-		temp.date += temp.minute / HOUR;
+		temp.date += temp.hour / HOUR;
 		temp.hour %= HOUR;
 		return temp;
 	}
@@ -76,11 +76,11 @@ public:
 		temp.minute = time_used;
 		temp.hour = temp.minute / MINUTE;
 		temp.minute %= MINUTE;
-		temp.date = temp.minute / HOUR;
+		temp.date = temp.hour / HOUR;
 		temp.hour %= HOUR;
 		return temp;
 	}
-	
+
 };
 const bool operator<(const Time& t1, const Time& t2)
 {
@@ -103,9 +103,9 @@ public:
 	int to;					//到达城市
 	Time begin_time;		//开始时间
 	Time end_time;			//到达时间
-	int time_used;			//所用时间/分钟
+	int time_used;			//所用时间/小时
 	int cost;				//费用
-	Traffic traffic;		//交通方式
+	string traffic;			//交通方式
 	string serial_number;	//列车班次、航班号
 	Path() {};
 	Path(const Path& p)
@@ -122,8 +122,9 @@ public:
 	Path& operator=(const Path& p)
 	{
 		this->from = p.from;
-		this->to = p.from;
+		this->to = p.to;
 		this->begin_time = p.begin_time;
+		this->end_time = p.end_time;
 		this->time_used = p.time_used;
 		this->cost = p.cost;
 		this->traffic = p.traffic;
@@ -137,7 +138,7 @@ const Time Time::operator+(const Path& p)
 	if (t.hour > p.begin_time.hour || t.hour == p.begin_time.hour&&t.minute > p.begin_time.minute)t.date++;
 	t.hour = p.begin_time.hour;
 	t.minute = p.begin_time.minute;
-	t = t + p.time_used;
+	t = t + p.time_used * 60;
 	return t;
 }
 class User//用户类
@@ -176,7 +177,7 @@ public:
 		arrivel_time = T;
 		distance = COST_MAX;
 	};
-	Road& operator=(const Road& r)
+	Road& copy(const Road& r)
 	{
 		path_length = r.path_length;
 		distance = r.distance;
@@ -188,5 +189,4 @@ public:
 		return *this;
 	}
 };
-
-#endif
+extern Schedule** PutSchedule();
