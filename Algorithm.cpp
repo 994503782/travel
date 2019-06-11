@@ -1,4 +1,5 @@
-﻿#include"struct.hpp"
+﻿
+#include"struct.hpp"
 /****************************************************
 运用Dijkstra算法
 输入：
@@ -14,11 +15,38 @@
 5.费用
 *****************************************************/
 
+static int cost_t;//策略2得到的最大花费
+const bool operator<(const Time& t1, const Time& t2)
+{
+	if (t1.date < t2.date)return true;
+	else if (t1.date == t2.date&&t1.hour < t2.hour)return true;
+	else if (t1.date == t2.date&&t1.hour == t2.hour&&t1.minute < t2.minute)return true;
+	return false;
+}
+const bool operator<=(const Time& t1, const Time& t2)
+{
+	if (t1.date < t2.date)return true;
+	else if (t1.date == t2.date&&t1.hour < t2.hour)return true;
+	else if (t1.date == t2.date&&t1.hour == t2.hour&&t1.minute <= t2.minute)return true;
+	return false;
+}
+const Time Time::operator+(const Path& p)
+{
+	Time t(*this);
+	if (t.hour > p.begin_time.hour || t.hour == p.begin_time.hour&&t.minute > p.begin_time.minute)t.date++;
+	t.hour = p.begin_time.hour;
+	t.minute = p.begin_time.minute;
+	t = t + p.time_used * 60;
+	return t;
+}
 int dijkstra_cost_first(Schedule** shift, int from, int to, Time begin, vector<Path> &path);
 int dijkstra_time_first(Schedule** shift, int from, int to, Time begin, vector<Path> &path);
 int DFS_time_limit(Schedule** shift, int from, int to, Time begin, Time limit, vector<Path> &path);
 void algorithm(Schedule** shift, int from, int to, Strategy strategy, vector<Path> &path, bool& flag, Time begin, Time limit)//得到的路径会连接到path的尾部
 {
+	int flag1, flag2;//用于策略3
+	vector<Path> path1, path2;
+	Time time_c, time_t;//策略1得到的时间与策略2得到的时间
 	switch (strategy)
 	{
 	case cost_first:
@@ -28,6 +56,30 @@ void algorithm(Schedule** shift, int from, int to, Strategy strategy, vector<Pat
 		flag = (bool)dijkstra_time_first(shift, from, to, begin, path);
 		break;
 	case time_limit:
+		/*
+		1.若限制时间大于等于策略1得到的时间则使用策略1的路径
+		2.若限制时间小于策略2得到的时间则无解
+		3.花费超过策略2的费用时剪枝
+		*/
+		flag1 = (bool)dijkstra_cost_first(shift, from, to, begin, path1);
+		flag2 = (bool)dijkstra_time_first(shift, from, to, begin, path2);
+		time_c = path1.back().end_time;
+		if (time_c <= limit)
+		{
+			flag = (bool)dijkstra_cost_first(shift, from, to, begin, path);
+			return;
+		}
+		time_t = path2.back().end_time;
+		if (limit < time_t)
+		{
+			flag = false;
+			return;
+		}
+		cost_t = 0;
+		for (int i = 0; i < path2.size(); i++)
+		{
+			cost_t += path2[i].cost;
+		}
 		flag = (bool)DFS_time_limit(shift, from, to, begin, limit, path);
 		break;
 	default:break;
@@ -220,18 +272,27 @@ int dijkstra_time_first(Schedule** shift, int from, int to, Time begin, vector<P
 
 /*******************************************************************************************************************/
 
-void DFS_find_road(Schedule** shift, int arrival[], int to, Time& begin, Time& limit, Road road, Road &road_best, int now)//now代表现在所在城市
+void DFS_find_road(Schedule** shift, int arrival[CITY_MAX], int to, Time& begin, Time& limit, Road road, Road &road_best, int now,int cost)//now代表现在所在城市
 {
-	cout << now << ' ' << to << endl;
 	if (to == now)//找到一条路径时
 	{
+#ifdef DEBUG
+		for (int k = 0; k < road.path_length; k++)
+		{
+			cout << road.path[k].from << '\t';
+		}
+		cout << road.path[road.path_length - 1].to << endl;
+#endif
 		if (road.arrivel_time < limit && road.distance < road_best.distance)//若满足给定的条件
 		{
 			road_best = road;
+#ifdef DEBUG
+			cout << "road_best 更新" << endl;
+#endif
 		}
 		return;
 	}
-	if (road.path_length && limit <= road.arrivel_time)//当时间已经超时，就进行剪枝
+	if ((road.path_length && limit <= road.arrivel_time)||cost>=cost_t)//当时间已经超时，就进行剪枝
 	{
 		return;
 	}
@@ -239,6 +300,7 @@ void DFS_find_road(Schedule** shift, int arrival[], int to, Time& begin, Time& l
 	for (int i = 0; i < CITY_MAX; i++)//检测从now到i城市的所有路径
 	{
 		if (arrival[i])continue;//若该城市已经过一次，则跳过
+		arrival[i] = 1;
 		for (int j = 0; j < shift[now][i].path_number; j++)
 		{
 			road_temp = road;
@@ -248,13 +310,15 @@ void DFS_find_road(Schedule** shift, int arrival[], int to, Time& begin, Time& l
 			{
 				road.path[road.path_length].begin_time.date++;
 			}
-			road.arrivel_time = road.arrivel_time+road.path[road.path_length];//更新到达时间
+			road.arrivel_time = road.arrivel_time + shift[now][i].path[j];//更新到达时间
 			road.path[road.path_length].end_time = road.arrivel_time;
 			road.distance += road.path[road.path_length].cost;
 			road.path_length++;
-			DFS_find_road(shift, arrival, to, begin, limit, road, road_best, i);//road更新完毕，进入下一层递归
+			DFS_find_road(shift, arrival, to, begin, limit, road, road_best, i, cost + shift[now][i].path[j].cost);//road更新完毕，进入下一层递归
 			road = road_temp;
+			
 		}
+		arrival[i] = 0;
 	}
 }
 int DFS_time_limit(Schedule** shift, int from, int to, Time begin, Time limit, vector<Path> &path)//限定时间内花费最少策略，采用DFS搜索
@@ -265,7 +329,7 @@ int DFS_time_limit(Schedule** shift, int from, int to, Time begin, Time limit, v
 	Road road_best;//用于存储最佳的路径
 	int arrival[CITY_MAX] = { 0 };//用于标志城市是否已经到达过
 	arrival[from] = 1;//起始城市置为已到达
-	DFS_find_road(shift, arrival, to, begin, limit, road, road_best, from);
+	DFS_find_road(shift, arrival, to, begin, limit, road, road_best, from, 0);
 	for (int i = 0; i < road_best.path_length; i++)
 	{
 		path.push_back(road_best.path[i]);//将所得的解连接在path的尾部
@@ -273,100 +337,6 @@ int DFS_time_limit(Schedule** shift, int from, int to, Time begin, Time limit, v
 	return road_best.path_length;
 }
 
-
-/****************************************************
-0 北京
-1 上海
-2 广州
-3 哈尔滨
-4 沈阳
-5 重庆
-6 西安
-7 昆明
-8 拉萨
-9 乌鲁木齐
-*****************************************************/
-
-Schedule** PutSchedule()
-{
-	int i, j;
-	Schedule **shift = new Schedule*[10];
-	for (i = 0; i < 10; i++)
-	{
-		shift[i] = new Schedule[10];
-	}
-	for (i = 0; i < 10; i++)
-	{
-		for (j = 0; j < 10; j++)
-		{
-			shift[i][j].path_number = 0;
-		}
-	}
-	ifstream in;
-	in.open("./tabledata.txt");
-	if (in.is_open())
-	{
-		while (!in.eof())
-		{
-			//cout << "get a line" << endl;
-			string from;				//起始城市
-			string to;					//到达城市
-			Time begin_time;
-			Time end_time;
-			int time_used;			//所用时间/分钟
-			int cost;				//费用
-			string traffic;
-			in >> from >> to >> traffic >> begin_time.hour >> end_time.hour >> cost >> time_used;
-			//cout << from << ' ' << to << ' ' << traffic << ' ' << begin_time.hour << ' ' << end_time.hour << ' ' << cost << ' ' << time_used << endl;
-			if (from == "北京") i = 0;
-			else if (from == "上海") i = 1;
-			else if (from == "广州") i = 2;
-			else if (from == "厦门") i = 3;
-			else if (from == "重庆") i = 4;
-			else if (from == "拉萨") i = 5;
-			else if (from == "乌鲁木齐") i = 6;
-			else if (from == "武汉") i = 7;
-			else if (from == "南京") i = 8;
-			else if (from == "哈尔滨") i = 9;
-			if (to == "北京") j = 0;
-			else if (to == "上海") j = 1;
-			else if (to == "广州") j = 2;
-			else if (to == "厦门") j = 3;
-			else if (to == "重庆") j = 4;
-			else if (to == "拉萨") j = 5;
-			else if (to == "乌鲁木齐") j = 6;
-			else if (to == "武汉") j = 7;
-			else if (to == "南京") j = 8;
-			else if (to == "哈尔滨") j = 9;
-			shift[i][j].path[shift[i][j].path_number].from = i;
-			shift[i][j].path[shift[i][j].path_number].to = j;
-			shift[i][j].path[shift[i][j].path_number].traffic = traffic;
-			shift[i][j].path[shift[i][j].path_number].begin_time = begin_time;
-			shift[i][j].path[shift[i][j].path_number].end_time = end_time;
-			shift[i][j].path[shift[i][j].path_number].cost = cost;
-			shift[i][j].path[shift[i][j].path_number].time_used = time_used;
-			shift[i][j].path[shift[i][j].path_number].end_time = begin_time + (time_used * 60);
-			shift[i][j].path_number++;
-		}
-	}
-	else
-	{
-		cout << "Erroer:open txt failed" << endl;
-	}
-	in.close();
-	/*for (i = 0; i < 10; i++)
-	{
-	for (j = 0; j < 10; j++)
-	{
-	for (int x = 0; x < shift[i][j].path_number; x++)
-	{
-	cout << shift[i][j].path[x].traffic << endl;
-	}
-	}
-	cout << endl;
-	}*/
-	return shift;
-}
 
 
 void output(vector<Path> &path)
@@ -410,9 +380,10 @@ int main()
 	vector<Path> path;
 	bool flag = false;
 	Time begin_time;
-	Time limit(10,0,0);
-
-	algorithm(shift, 6, 9, strategy, path, flag, begin_time, limit);
+	Time limit(5,0,0);
+	int a, b;
+	cin >> a >> b;
+	algorithm(shift, a, b, strategy, path, flag, begin_time, limit);
 	if (flag)
 		output(path);
 	else
