@@ -103,14 +103,18 @@ int dijkstra_cost_first(Schedule** shift, int from, int to, Time begin, vector<P
 			if (shift[from][i].path[j].cost < distance[i])
 			{
 				road[i].path[0] = shift[from][i].path[j];//加入路径表中
-				
+				road[i].path[0].begin_time.date = begin.date;
 				road[i].path_length = 1;//路径长度置1
 				if (begin <= road[i].path[0].begin_time);
 				else road[i].path[0].begin_time.date++;//若今天无法出发，则date+1
 				distance[i] = shift[from][i].path[j].cost;//存在路径时修改距离
 			}
 		}
-		if (road[i].path_length == 1)road[i].arrivel_time = begin + road[i].path[0];//初始化到达时间
+		if (road[i].path_length == 1)//初始化到达时间
+		{
+			road[i].arrivel_time = begin + road[i].path[0];
+			road[i].path[0].end_time = road[i].arrivel_time;
+		}
 	}
 	determined[from] = 1;//固定源点
 	int city;
@@ -189,7 +193,11 @@ int dijkstra_time_first(Schedule** shift, int from, int to, Time begin, vector<P
 				distance[i] = begin + shift[from][i].path[j];//存在路径时修改距离
 			}
 		}
-		if (road[i].path_length == 1)road[i].arrivel_time = distance[i];//初始化到达时间
+		if (road[i].path_length == 1)//初始化到达时间
+		{
+			road[i].arrivel_time = distance[i];
+			road[i].path[0].end_time = road[i].arrivel_time;
+		}
 	}
 	determined[from] = 1;//固定源点
 	int city;
@@ -324,8 +332,8 @@ void DFS_find_road(Schedule** shift, int arrival[CITY_MAX], int to, Time& begin,
 int DFS_time_limit(Schedule** shift, int from, int to, Time begin, Time limit, vector<Path> &path)//限定时间内花费最少策略，采用DFS搜索
 {
 	Road road;//用于存储源点到目的地的路径
-	Time T(0, 0, 0);
-	road.arrivel_time = T;
+	//Time T(0, 0, 0);
+	road.arrivel_time = begin;
 	Road road_best;//用于存储最佳的路径
 	int arrival[CITY_MAX] = { 0 };//用于标志城市是否已经到达过
 	arrival[from] = 1;//起始城市置为已到达
@@ -376,16 +384,22 @@ int main()
 	
 	Schedule** shift = PutSchedule();
 	
-	Strategy strategy = time_limit;
+	Strategy strategy;
 	vector<Path> path;
 	bool flag = false;
-	Time begin_time;
-	Time limit(5,0,0);
-	int a, b;
+	Time begin_time(1,0,0);
+	Time limit(1,21,0);
+	int a, b, c;
+
 	cin >> a >> b;
+	cin >> c;
+	strategy = (Strategy)c;
 	algorithm(shift, a, b, strategy, path, flag, begin_time, limit);
 	if (flag)
+	{
 		output(path);
+		cout << "path.size:" << path.size() << endl;
+	}
 	else
 		cout << "找不到方案" << endl;
 	system("pause");
